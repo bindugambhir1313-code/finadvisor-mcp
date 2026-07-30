@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FinAdvisor — Agentic Retirement Planning</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--navy:#0F1E35;--navy2:#162540;--navy3:#1E3256;--blue:#2563EB;--cyan:#38BDF8;--green:#22C55E;--amber:#F59E0B;--red:#EF4444;--white:#F0F6FF;--muted:#7BA3CC;--border:#243B55;--font:'Segoe UI',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--navy);color:var(--white);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--navy2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;flex-wrap:wrap;gap:8px}
+.logo-title{font-size:16px;font-weight:700}.logo-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(37,99,235,.2);color:var(--cyan);border:1px solid rgba(56,189,248,.3)}
+.live-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.mode-toggle{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.mtbtn{padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.mtbtn.active{background:var(--blue);color:#fff}.mtbtn:not(.active){background:var(--navy3);color:var(--muted)}
+.key-bar{background:rgba(239,68,68,.1);border-bottom:1px solid rgba(239,68,68,.3);padding:7px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.key-bar.hidden{display:none}
+.key-bar label{font-size:12px;color:var(--red);font-weight:500;white-space:nowrap}
+.key-input{flex:1;background:var(--navy3);border:1px solid rgba(239,68,68,.4);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--white);outline:none;font-family:monospace}
+.key-btn{padding:6px 14px;border-radius:6px;background:var(--red);border:none;color:#fff;font-size:12px;cursor:pointer}
+.live-bar{background:var(--navy3);border-bottom:1px solid var(--border);padding:6px 20px;display:flex;align-items:center;gap:20px;flex-shrink:0;flex-wrap:wrap}
+.live-bar.hidden{display:none}
+.lv-item{display:flex;align-items:center;gap:6px;font-size:11px}
+.lv-label{color:var(--muted)}.lv-val{font-weight:600}.lv-src{font-size:9px;color:var(--muted);margin-left:2px}
+.lv-loading{color:var(--amber);font-size:10px;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:210px;background:var(--navy2);border-right:1px solid var(--border);padding:11px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;gap:9px}
+.sb-title{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.tool-list{display:flex;flex-direction:column;gap:3px}
+.tool-item{font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(37,99,235,.1);color:var(--muted);border:0.5px solid rgba(37,99,235,.2);transition:all .3s;font-family:monospace}
+.tool-item.firing{background:rgba(245,158,11,.2);color:var(--amber);border-color:var(--amber);font-weight:600}
+.tool-item.done{background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.3)}
+.user-info{background:var(--navy3);border-radius:8px;padding:9px;border:0.5px solid var(--border);font-size:11px}
+.ui-name{font-weight:600;margin-bottom:5px;font-size:12px}
+.ui-row{display:flex;justify-content:space-between;padding:2px 0;color:var(--muted);border-bottom:0.5px solid rgba(255,255,255,.04)}
+.ui-row:last-child{border:none}.ui-val{color:var(--white);font-weight:500}
+.gap-bars{margin-top:2px}
+.gb{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+.gb-lbl{font-size:9px;color:var(--muted);min-width:55px}
+.gb-track{flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.gb-fill{height:100%;border-radius:2px;transition:width .8s}
+.gb-pct{font-size:9px;min-width:22px;text-align:right}
+.intake-progress{background:var(--navy3);border-radius:8px;padding:9px;border:0.5px solid var(--border)}
+.intake-title{font-size:11px;font-weight:500;color:var(--cyan);margin-bottom:6px}
+.intake-step{display:flex;align-items:center;gap:6px;font-size:10px;padding:2px 0}
+.is-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.is-done .is-dot{background:var(--green)}.is-active .is-dot{background:var(--amber);animation:pulse 1s infinite}.is-pend .is-dot{background:rgba(255,255,255,.15)}
+.is-done{color:var(--green)}.is-active{color:var(--amber)}.is-pend{color:var(--muted)}
+.chat-center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-scroll{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.chat-scroll::-webkit-scrollbar{width:3px}.chat-scroll::-webkit-scrollbar-thumb{background:var(--border)}
+.msg{display:flex;gap:9px;align-items:flex-start;animation:fadein .3s}
+@keyframes fadein{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.av-bot{background:linear-gradient(135deg,#1D4ED8,#0E7490)}.av-user{background:linear-gradient(135deg,#059669,#0D9488)}
+.bubble{max-width:76%;border-radius:11px;padding:9px 13px;font-size:12.5px;line-height:1.7}
+.bubble-bot{background:var(--navy3);border:1px solid var(--border);border-bottom-left-radius:3px}
+.bubble-user{background:linear-gradient(135deg,#1D4ED8,#1E40AF);border-bottom-right-radius:3px}
+.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}.hi{color:var(--cyan)}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.metric{background:var(--navy2);border-radius:6px;padding:7px 9px;border:0.5px solid var(--border)}
+.m-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.m-val{font-size:14px;font-weight:600}.m-sub{font-size:9px;margin-top:1px}
+.m-ok .m-val{color:var(--green)}.m-warn .m-val{color:var(--amber)}.m-bad .m-val{color:var(--red)}.m-info .m-val{color:var(--cyan)}
+.chart-wrap{background:var(--navy2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:8px}
+.chart-title{font-size:12px;font-weight:500;color:var(--cyan);margin-bottom:8px}.chart-wrap canvas{max-height:180px}
+.tool-trace{background:rgba(245,158,11,.07);border:0.5px solid rgba(245,158,11,.25);border-radius:6px;padding:5px 9px;font-size:10.5px;display:flex;align-items:center;gap:6px;font-family:monospace}
+.tt-name{color:var(--amber);font-weight:600}.tt-ok{color:var(--green);margin-left:auto;font-size:10px}.tt-live{color:var(--cyan);font-size:9px;margin-left:4px}
+.qrow{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.qb{font-size:11px;padding:4px 11px;border-radius:16px;border:1px solid var(--border);background:var(--navy3);color:var(--muted);cursor:pointer;transition:all .15s}
+.qb:hover{border-color:var(--blue);color:var(--white)}
+.typing{display:flex;gap:4px;padding:3px 0;align-items:center}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+.input-bar{padding:11px 18px;border-top:1px solid var(--border);background:var(--navy2);flex-shrink:0}
+.irow{display:flex;gap:7px;align-items:center}
+.ci{flex:1;background:var(--navy3);border:1px solid var(--border);border-radius:9px;padding:9px 13px;font-size:12.5px;color:var(--white);outline:none;font-family:var(--font)}
+.ci::placeholder{color:var(--muted)}.ci:focus{border-color:var(--blue)}
+.send{width:36px;height:36px;border-radius:8px;background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.send:hover{opacity:.85}.send svg{fill:#fff;width:14px;height:14px}
+.right{width:200px;background:var(--navy2);border-left:1px solid var(--border);padding:11px;overflow-y:auto;flex-shrink:0}
+.log{background:var(--navy);border-radius:5px;padding:7px;font-family:monospace;font-size:9px;color:var(--muted);line-height:1.9;max-height:320px;overflow-y:auto}
+.log .lm{color:var(--cyan)}.log .lok{color:var(--green)}.log .lwarn{color:var(--amber)}.log .lred{color:var(--red)}
+.prog-wrap{margin-bottom:9px}
+.prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px}
+.prog-track{height:4px;background:var(--navy);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .4s}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div><div class="logo-title"><span class="dot"></span>FinAdvisor</div><div class="logo-sub">Agentic MCP · Groq LLaMA 3.3 70B · Live Market Data</div></div>
+  <div class="topbar-right">
+    <div class="mode-toggle">
+      <button class="mtbtn active" id="btn-existing" onclick="setMode('existing')">Existing user</button>
+      <button class="mtbtn" id="btn-new" onclick="setMode('new')">New user</button>
+    </div>
+    <div class="live-badge">● Live APIs</div>
+    <div class="badge">MCP + Groq</div>
+  </div>
+</div>
+<div class="key-bar" id="key-bar">
+  <label>Paste Groq API key to start:</label>
+  <input class="key-input" id="key-input" type="password" placeholder="gsk_xxxxxxxxxxxx"/>
+  <button class="key-btn" onclick="setKey()">Connect</button>
+</div>
+<div class="live-bar hidden" id="live-bar">
+  <div class="lv-item"><span class="lv-label">Nifty 50</span><span class="lv-val" id="lv-nifty"><span class="lv-loading">fetching...</span></span><span class="lv-src">Yahoo Finance</span></div>
+  <div class="lv-item"><span class="lv-label">Inflation</span><span class="lv-val" id="lv-inf" style="color:var(--amber)">6.2% (RBI)</span></div>
+  <div class="lv-item"><span class="lv-label">Mirae NAV</span><span class="lv-val" id="lv-nav"><span class="lv-loading">fetching...</span></span><span class="lv-src">AMFI mfapi.in</span></div>
+  <div class="lv-item"><span class="lv-label">NPS E-class</span><span class="lv-val" style="color:var(--green)">12.8% CAGR</span><span class="lv-src">PFRDA</span></div>
+  <div class="lv-item"><span class="lv-label">EPF</span><span class="lv-val" style="color:var(--green)">8.15%</span><span class="lv-src">EPFO</span></div>
+</div>
+<div class="main">
+<div class="sidebar">
+  <div>
+    <div class="sb-title">MCP Tools (8)</div>
+    <div class="tool-list" id="tool-list">
+      <div class="tool-item" id="t-profile">get_user_profile</div>
+      <div class="tool-item" id="t-market">get_market_benchmarks</div>
+      <div class="tool-item" id="t-gaps">calculate_retirement_gaps</div>
+      <div class="tool-item" id="t-recs">get_product_recommendations</div>
+      <div class="tool-item" id="t-quote">get_insurance_quote</div>
+      <div class="tool-item" id="t-corpus">project_retirement_corpus</div>
+      <div class="tool-item" id="t-kyc">initiate_kyc</div>
+      <div class="tool-item" id="t-purchase">execute_purchase</div>
+    </div>
+  </div>
+  <div id="sb-user">
+    <div class="sb-title">User profile</div>
+    <div class="user-info" id="user-info"><div style="color:var(--muted);font-size:11px">Waiting...</div></div>
+  </div>
+  <div id="sb-gaps" style="display:none">
+    <div class="sb-title">Gap status</div>
+    <div class="user-info" id="gap-info"></div>
+  </div>
+  <div id="sb-intake" style="display:none">
+    <div class="intake-progress">
+      <div class="intake-title">New user intake</div>
+      <div id="intake-steps"></div>
+    </div>
+  </div>
+</div>
+<div class="chat-center">
+  <div class="chat-scroll" id="chat"></div>
+  <div class="input-bar">
+    <div class="irow">
+      <input class="ci" id="inp" placeholder="Ask FinAdvisor about your retirement plan..." onkeydown="if(event.key==='Enter')send()"/>
+      <button class="send" onclick="send()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+    </div>
+  </div>
+</div>
+<div class="right">
+  <div class="sb-title" style="margin-bottom:6px">Session progress</div>
+  <div class="prog-wrap">
+    <div class="prog-lbl"><span id="plbl">Initialising</span><span id="ppct">0%</span></div>
+    <div class="prog-track"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
+  </div>
+  <div class="sb-title" style="margin-bottom:4px">Live data</div>
+  <div id="data-status" style="font-size:10px;color:var(--muted);margin-bottom:8px">Fetching...</div>
+  <div class="sb-title" style="margin-bottom:5px">API trace</div>
+  <div class="log" id="log">Waiting...<br></div>
+</div>
+</div>
+<script>
+let GROQ_KEY="",currentMode="existing",messages=[],busy=false,corpusChart=null;
+const MODEL="llama-3.1-8b-instant";
+let liveData={nifty_cagr:12.1,inflation:6.2,mf_nav:null,mf_cagr:12.4,loaded:false};
+
+// LIVE DATA FETCH
+async function fetchLiveData(){
+  document.getElementById("live-bar").classList.remove("hidden");
+  try{
+    const r=await fetch("https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=1mo&range=10y");
+    if(r.ok){const d=await r.json();const c=d.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter(Boolean);
+    if(c?.length>1){const cagr=((Math.pow(c[c.length-1]/c[0],1/10)-1)*100).toFixed(1);liveData.nifty_cagr=parseFloat(cagr);
+    document.getElementById("lv-nifty").innerHTML=`<span style="color:var(--green)">${cagr}% CAGR</span>`;log(`<span class="lok">Nifty CAGR live: ${cagr}%</span>`);}}
+  }catch(e){document.getElementById("lv-nifty").innerHTML=`<span style="color:var(--amber)">${liveData.nifty_cagr}% cached</span>`;}
+  try{
+    const r=await fetch("https://api.mfapi.in/mf/119598");
+    if(r.ok){const d=await r.json();const n=d.data;
+    if(n?.length>365){const lat=parseFloat(n[0].nav);const yr=parseFloat(n[365].nav);
+    const cagr=((lat/yr-1)*100).toFixed(1);liveData.mf_nav=lat;liveData.mf_cagr=parseFloat(cagr);
+    document.getElementById("lv-nav").innerHTML=`<span style="color:var(--green)">Rs ${lat} (${cagr}% 1yr)</span>`;log(`<span class="lok">Mirae NAV live: Rs ${lat}</span>`);}}
+  }catch(e){document.getElementById("lv-nav").innerHTML=`<span style="color:var(--amber)">cached ${liveData.mf_cagr}%</span>`;}
+  liveData.loaded=true;
+  document.getElementById("data-status").innerHTML=`<span style="color:var(--green)">Live data loaded</span><br><span>Nifty: ${liveData.nifty_cagr}%</span>${liveData.mf_nav?`<br><span>NAV: Rs ${liveData.mf_nav}</span>`:""}`;
+}
+
+// CORPUS CHART
+function buildChart(sip,addNPS,yrs){
+  const labels=[],mfL=[],totL=[],tgtL=[];
+  const r=liveData.nifty_cagr/100/12,nr=0.128/12;
+  for(let y=0;y<=yrs;y++){
+    const mo=y*12,mf=Math.round(sip*((Math.pow(1+r,mo)-1)/r));
+    const epf=Math.round(620000*Math.pow(1.0815,y));
+    const nps=addNPS?Math.round(5000*((Math.pow(1+nr,mo)-1)/nr)):0;
+    labels.push(`Yr ${y}`);mfL.push(+(mf/1e7).toFixed(2));totL.push(+((mf+epf+nps)/1e7).toFixed(2));tgtL.push(+(3800000/1e7).toFixed(2));
+  }
+  const w=document.createElement("div");w.className="chart-wrap";
+  w.innerHTML=`<div class="chart-title">Retirement corpus projection (Nifty CAGR ${liveData.nifty_cagr}% ${liveData.loaded?"live":"cached"})</div><canvas id="cc"></canvas>`;
+  document.getElementById("chat").appendChild(w);scroll();
+  if(corpusChart)corpusChart.destroy();
+  corpusChart=new Chart(document.getElementById("cc"),{type:"line",data:{labels,datasets:[
+    {label:"Total corpus (Cr)",data:totL,borderColor:"#22C55E",backgroundColor:"rgba(34,197,94,.08)",tension:.4,fill:true},
+    {label:"MF only (Cr)",data:mfL,borderColor:"#38BDF8",backgroundColor:"transparent",tension:.4,borderDash:[4,4]},
+    {label:"Target Rs 3.8Cr",data:tgtL,borderColor:"#EF4444",backgroundColor:"transparent",borderDash:[6,3]}
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:"#7BA3CC",font:{size:10}}}},scales:{
+    x:{ticks:{color:"#7BA3CC",font:{size:9},maxTicksLimit:10},grid:{color:"rgba(255,255,255,.05)"}},
+    y:{ticks:{color:"#7BA3CC",font:{size:9},callback:v=>`Rs ${v}Cr`},grid:{color:"rgba(255,255,255,.05)"}}
+  }}});
+}
+
+// INTAKE
+const I_FIELDS=["name","age","income","retire_age","health","investments","risk"];
+const I_LABELS=["Name","Age","Income","Retire age","Health","Investments","Risk profile"];
+let intakeData={};
+function updIntake(){
+  document.getElementById("sb-intake").style.display="block";
+  document.getElementById("sb-user").style.display="none";
+  const done=Object.keys(intakeData).length;
+  document.getElementById("intake-steps").innerHTML=I_FIELDS.map((f,i)=>{
+    const d=intakeData[f],active=!d&&i===done,cls=d?"is-done":active?"is-active":"is-pend";
+    return `<div class="intake-step ${cls}"><div class="is-dot"></div><span>${I_LABELS[i]}${d?" - "+String(d).slice(0,10):""}</span></div>`;
+  }).join("");
+}
+
+function getSystem(){
+  const mkt=liveData.loaded?`LIVE MARKET DATA: Nifty 10yr CAGR ${liveData.nifty_cagr}% (Yahoo Finance), Mirae Asset 1yr CAGR ${liveData.mf_cagr}%${liveData.mf_nav?` NAV Rs ${liveData.mf_nav}`:""}. Always mention these are live figures.`:`Market data: Nifty 12.1%, inflation 6.2%, NPS 12.8%, EPF 8.15%`;
+  if(currentMode==="existing")return `You are FinAdvisor, agentic AI retirement advisor for India. ${mkt}
+RULES: 1.User gives U-4421 -> call get_user_profile 2.After profile -> call get_market_benchmarks AND calculate_retirement_gaps 3.Show working(checkmark) before gaps(X) 4.Products -> call get_product_recommendations + get_insurance_quote 5.Projections -> call project_retirement_corpus (this shows a chart) 6.NEVER execute_purchase without yes/confirm 7.After yes -> initiate_kyc then execute_purchase 8.CI cover urgent for T2 diabetes 9.Use exact rupee amounts 10.Reference live data source.`;
+  return `You are FinAdvisor, agentic AI retirement advisor for India. ${mkt}
+NEW USER INTAKE MODE. Ask ONE question at a time:
+1."What is your name?" 2."How old are you [name]?" 3."What is your monthly take-home income in rupees?" 4."At what age would you like to retire?" 5."Any health conditions for insurance planning? (or none)" 6."Any existing investments - SIP, EPF, FD? Roughly how much total?" 7."If portfolio dropped 20% tomorrow: (a)hold steady (b)shift safer (c)move to FD?"
+After all 7 answers: call calculate_retirement_gaps with their data, call get_product_recommendations, present plan, offer corpus chart. Be warm and encouraging.`;
+}
+
+const TOOLS=[
+  {type:"function",function:{name:"get_user_profile",description:"Load user profile purchases financial data",parameters:{type:"object",properties:{user_id:{type:"string"}},required:["user_id"]}}},
+  {type:"function",function:{name:"get_market_benchmarks",description:"Fetch live Nifty CAGR inflation NPS returns",parameters:{type:"object",properties:{risk_tier:{type:"string"}}}}},
+  {type:"function",function:{name:"calculate_retirement_gaps",description:"Calculate corpus SIP cover CI gaps - works for new or existing users",parameters:{type:"object",properties:{user_id:{type:"string"},age:{type:"number"},income:{type:"number"},retire_age:{type:"number"},existing_sip:{type:"number"},existing_cover:{type:"number"},health_flags:{type:"array",items:{type:"string"}}},required:[]}}},
+  {type:"function",function:{name:"get_product_recommendations",description:"Get ranked retirement product recommendations",parameters:{type:"object",properties:{user_id:{type:"string"},risk_tier:{type:"string"}},required:[]}}},
+  {type:"function",function:{name:"get_insurance_quote",description:"Fetch live insurance quote",parameters:{type:"object",properties:{product_id:{type:"string"},user_id:{type:"string"}},required:["product_id"]}}},
+  {type:"function",function:{name:"project_retirement_corpus",description:"Project total corpus at retirement - ALSO shows a visual chart to user",parameters:{type:"object",properties:{user_id:{type:"string"},new_sip_total:{type:"number"},add_nps:{type:"boolean"},retire_years:{type:"number"}},required:[]}}},
+  {type:"function",function:{name:"initiate_kyc",description:"Start DigiLocker KYC",parameters:{type:"object",properties:{user_id:{type:"string"}},required:[]}}},
+  {type:"function",function:{name:"execute_purchase",description:"Execute purchase ONLY after explicit user confirmation",parameters:{type:"object",properties:{user_id:{type:"string"},product_id:{type:"string"},quote_id:{type:"string"},kyc_verified:{type:"boolean"}},required:["product_id","quote_id","kyc_verified"]}}}
+];
+const TM={get_user_profile:"t-profile",get_market_benchmarks:"t-market",calculate_retirement_gaps:"t-gaps",get_product_recommendations:"t-recs",get_insurance_quote:"t-quote",project_retirement_corpus:"t-corpus",initiate_kyc:"t-kyc",execute_purchase:"t-purchase"};
+
+function execTool(name,args){
+  const h={
+    get_user_profile:()=>({success:true,profile:{name:"Ramesh Thomas",age:44,monthly_income:140000,risk_tier:"moderate",retire_age:62,health_flags:["t2_diabetes"],existing_sip:8000,existing_life_cover:7500000,epf_balance:620000,ci_cover:0,nps_balance:0,current_mf:"Mirae Asset Large Cap",mf_cagr_10yr:liveData.mf_cagr,mf_live_nav:liveData.mf_nav,corpus_target:3800000,years_to_retire:18}}),
+    get_market_benchmarks:()=>({success:true,risk_tier:args.risk_tier||"moderate",benchmark_cagr:10.8,market_data:{nifty_50_cagr_10yr:liveData.nifty_cagr,mf_1yr_cagr:liveData.mf_cagr,mf_nav:liveData.mf_nav,inflation_rate:liveData.inflation,nps_e_class_cagr:12.8,fd_rate:7.1,epf_rate:8.15},data_source:liveData.loaded?"Yahoo Finance + mfapi.in LIVE":"cached fallback"}),
+    calculate_retirement_gaps:()=>{
+      const age=args.age||44,income=args.income||140000,ret=args.retire_age||62,yrs=ret-age;
+      const sip=args.existing_sip||8000,cover=args.existing_cover||7500000;
+      const r=liveData.nifty_cagr/100/12,n=yrs*12;
+      const req=Math.round(3800000*r/(Math.pow(1+r,n)-1));
+      const bc=income*12*15,hf=args.health_flags||["t2_diabetes"];
+      return {success:true,gap_analysis:{corpus_target:"Rs 3.8 Cr",sip_required:req,existing_sip:sip,sip_gap:Math.max(0,req-sip),cover_benchmark:bc,existing_cover:cover,cover_gap:Math.max(0,bc-cover),ci_gap:hf.includes("t2_diabetes")?2500000:0,ci_is_critical:hf.includes("t2_diabetes"),nps_missing:true,mf_alpha:`+${(liveData.mf_cagr-liveData.nifty_cagr).toFixed(1)}% vs Nifty`,nifty_cagr_used:liveData.nifty_cagr,live_data:liveData.loaded}};
+    },
+    get_product_recommendations:()=>({success:true,recommendations:[
+      {rank:1,id:"STAR_HEALTH_CI_25L",name:"Star Health Criti Guard Rs 25L",type:"CI Insurance",premium:"Rs 19450/yr",score:0.94,reason:"T2 diabetes CI most urgent"},
+      {rank:2,id:"TATA_AIA_TERM",name:"Tata AIA Term Rs 1.35 Cr",type:"Term",premium:"Rs 21500/yr",score:0.89},
+      {rank:3,id:"NPS_TIER1",name:"NPS Tier 1 SBI Rs 5k/mo",type:"Pension",returns:"12.8% CAGR",score:0.87,tax_saving:"Rs 15600/yr"},
+      {rank:4,id:"AXIS_MIDCAP",name:"Axis Midcap Rs 8k/mo",type:"MF",returns:"15.8% CAGR",score:0.82}
+    ]}),
+    get_insurance_quote:()=>({success:true,quote:{quote_id:"SH-2024-88231",product:"Star Health Criti Guard",cover:"Rs 25 Lakh",annual_premium:19450,display:"Rs 19450/yr incl GST",diabetes_covered:true,waiting_period:"90 days"}}),
+    project_retirement_corpus:()=>{
+      const sip=args.new_sip_total||8000,nps=args.add_nps||false,yrs=args.retire_years||18;
+      const r=liveData.nifty_cagr/100/12,n=yrs*12;
+      const mf=Math.round(sip*((Math.pow(1+r,n)-1)/r));
+      const epf=Math.round(620000*Math.pow(1.0815,yrs));
+      const npsv=nps?Math.round(5000*((Math.pow(1+0.128/12,n)-1)/(0.128/12))):0;
+      const tot=mf+epf+npsv;
+      setTimeout(()=>buildChart(sip,nps,yrs),400);
+      return {success:true,projection:{sip,mf_display:`Rs ${(mf/1e7).toFixed(2)} Cr`,epf_display:`Rs ${(epf/1e7).toFixed(2)} Cr`,nps_display:nps?`Rs ${(npsv/1e7).toFixed(2)} Cr`:"Not included",total_display:`Rs ${(tot/1e7).toFixed(2)} Cr`,target:"Rs 3.8 Cr",on_track:tot>=3800000,cagr_used:liveData.nifty_cagr,live:liveData.loaded}};
+    },
+    initiate_kyc:()=>({success:true,kyc_session:`KYC-${Date.now()}`,message:"DigiLocker link sent to mobile 7821",docs:["Aadhaar","PAN"]}),
+    execute_purchase:()=>args.kyc_verified?{success:true,purchase_id:`PUR-${Date.now()}`,status:"submitted",message:"Policy issued 24-48 hrs",renewal:"Alert set 12 months"}:{success:false,error:"KYC not done"}
+  };
+  return JSON.stringify(h[name]?h[name]():{error:`Unknown: ${name}`});
+}
+
+const chat=document.getElementById("chat");
+function log(h){const b=document.getElementById("log");b.innerHTML+=h+"<br>";b.scrollTop=b.scrollHeight;}
+function prog(p,l){document.getElementById("pfill").style.width=p+"%";document.getElementById("ppct").textContent=p+"%";document.getElementById("plbl").textContent=l;}
+function scroll(){chat.scrollTop=chat.scrollHeight;}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+function fireTool(n){const e=document.getElementById(TM[n]);if(e)e.className="tool-item firing";log(`<span class="lm">MCP -> ${n}</span>`);}
+function doneTool(n){const e=document.getElementById(TM[n]);if(e)e.className="tool-item done";}
+function addTrace(n,live){const d=document.createElement("div");d.className="tool-trace";d.innerHTML=`<span class="tt-name">${n}</span>${live?'<span class="tt-live">live</span>':''}<span class="tt-ok">done</span>`;chat.appendChild(d);scroll();}
+function addTyping(){const d=document.createElement("div");d.className="msg";d.id="typing";d.innerHTML=`<div class="av av-bot">FA</div><div class="bubble bubble-bot"><div class="typing"><span></span><span></span><span></span></div></div>`;chat.appendChild(d);scroll();}
+function removeTyping(){const e=document.getElementById("typing");if(e)e.remove();}
+function addBubble(who,html,qr=[]){
+  const iu=who==="user";const d=document.createElement("div");d.className="msg"+(iu?" user":"");
+  let q=qr.length?`<div class="qrow">${qr.map(t=>`<div class="qb" onclick="qsend('${t}')">${t}</div>`).join("")}</div>`:"";
+  d.innerHTML=`<div class="av ${iu?"av-user":"av-bot"}">${iu?"U":"FA"}</div><div class="bubble ${iu?"bubble-user":"bubble-bot"}">${html}${q}</div>`;
+  chat.appendChild(d);scroll();
+}
+function qsend(t){document.getElementById("inp").value=t;send();}
+function updateUserCard(p){
+  document.getElementById("user-info").innerHTML=`<div class="ui-name">${p.name}</div>
+    <div class="ui-row"><span>Age</span><span class="ui-val">${p.age}</span></div>
+    <div class="ui-row"><span>Income</span><span class="ui-val">Rs ${(p.monthly_income/1000).toFixed(0)}k/mo</span></div>
+    <div class="ui-row"><span>Risk</span><span class="ui-val">${p.risk_tier}</span></div>
+    <div class="ui-row"><span>Retire</span><span class="ui-val">Age ${p.retire_age}</span></div>
+    <div class="ui-row"><span>Health</span><span class="ui-val" style="color:var(--red)">${(p.health_flags||[]).join(",")||"none"}</span></div>
+    ${p.mf_cagr_10yr?`<div class="ui-row"><span>MF CAGR</span><span class="ui-val" style="color:var(--green)">${p.mf_cagr_10yr}%${liveData.loaded?" live":""}</span></div>`:""}`;
+}
+function updateGapCard(){
+  document.getElementById("sb-gaps").style.display="block";
+  document.getElementById("gap-info").innerHTML=`<div class="gap-bars">
+    <div class="gb"><div class="gb-lbl">Life cover</div><div class="gb-track"><div class="gb-fill" style="width:36%;background:var(--red)"></div></div><div class="gb-pct" style="color:var(--red)">36%</div></div>
+    <div class="gb"><div class="gb-lbl">SIP</div><div class="gb-track"><div class="gb-fill" style="width:29%;background:var(--amber)"></div></div><div class="gb-pct" style="color:var(--amber)">29%</div></div>
+    <div class="gb"><div class="gb-lbl">CI cover</div><div class="gb-track"><div class="gb-fill" style="width:0%;background:var(--red)"></div></div><div class="gb-pct" style="color:var(--red)">0%</div></div>
+    <div class="gb"><div class="gb-lbl">MF</div><div class="gb-track"><div class="gb-fill" style="width:85%;background:var(--green)"></div></div><div class="gb-pct" style="color:var(--green)">ok</div></div>
+  </div><div style="font-size:9px;color:var(--muted);margin-top:4px">Nifty: ${liveData.nifty_cagr}% ${liveData.loaded?"live":"cached"}</div>`;
+}
+
+async function callGroq(msgs,retries=3){
+  for(let i=0;i<retries;i++){
+    const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${GROQ_KEY}`},body:JSON.stringify({model:MODEL,messages:[{role:"system",content:getSystem()},...msgs],tools:TOOLS,tool_choice:"auto",temperature:0.3,max_tokens:1024})});
+    if(res.ok)return res.json();
+    const err=await res.json();const msg=err.error?.message||"";
+    if(msg.includes("Rate limit")||res.status===429){removeTyping();addBubble("bot",`<span class="warn">Rate limit - waiting 60s then retrying...</span>`);await delay(60000);addTyping();continue;}
+    throw new Error(msg);
+  }
+}
+
+async function agentLoop(){
+  while(true){
+    addTyping();let data;
+    try{data=await callGroq(messages);}catch(e){removeTyping();addBubble("bot",`<span class="bad">Error: ${e.message}</span>`);break;}
+    removeTyping();
+    const msg=data.choices[0].message;
+    if(msg.content){
+      let html=msg.content.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/✓([^\n]+)/g,'<span class="ok">✓$1</span>').replace(/✗([^\n]+)/g,'<span class="bad">✗$1</span>').replace(/\n/g,"<br>");
+      if(msg.content.includes("gap")||msg.content.includes("corpus")){
+        html+=`<div class="metrics">
+          <div class="metric m-bad"><div class="m-lbl">CI cover</div><div class="m-val">Rs 0</div><div class="m-sub" style="color:var(--red)">Need Rs 25L critical</div></div>
+          <div class="metric m-warn"><div class="m-lbl">SIP gap</div><div class="m-val">Rs 20k/mo</div><div class="m-sub" style="color:var(--amber)">Need Rs 28k</div></div>
+          <div class="metric m-bad"><div class="m-lbl">Cover gap</div><div class="m-val">Rs 1.35Cr</div><div class="m-sub" style="color:var(--red)">36% of benchmark</div></div>
+          <div class="metric m-info"><div class="m-lbl">Nifty CAGR</div><div class="m-val">${liveData.nifty_cagr}%</div><div class="m-sub" style="color:var(--cyan)">${liveData.loaded?"live Yahoo":"cached"}</div></div>
+        </div>`;updateGapCard();
+      }
+      const qr=[];
+      if(msg.content.includes("CI")||msg.content.includes("diabetes"))qr.push("Fix CI cover first");
+      if(msg.content.includes("NPS"))qr.push("Open NPS + show chart");
+      if(msg.content.includes("corpus")||msg.content.includes("projection"))qr.push("Show corpus chart");
+      if(msg.content.includes("quote")||msg.content.includes("premium"))qr.push("Yes confirm purchase");
+      if(msg.content.includes("SIP"))qr.push("Increase SIP");
+      addBubble("bot",html,qr.slice(0,4));
+      log(`<span class="lok">LLM response ok</span>`);
+      // Update intake sidebar if new user
+      if(currentMode==="new"){
+        const lower=msg.content.toLowerCase();
+        if(lower.includes("name"))intakeData={};
+        if(lower.includes("old")||lower.includes("age"))intakeData.name=intakeData.name||"collected";
+        updIntake();
+      }
+    }
+    if(!msg.tool_calls||!msg.tool_calls.length){messages.push({role:"assistant",content:msg.content||""});break;}
+    messages.push({role:"assistant",content:msg.content||"",tool_calls:msg.tool_calls.map(tc=>({id:tc.id,type:"function",function:{name:tc.function.name,arguments:tc.function.arguments}}))});
+    const liveTools=["get_market_benchmarks","project_retirement_corpus","calculate_retirement_gaps"];
+    for(const tc of msg.tool_calls){
+      const args=JSON.parse(tc.function.arguments);fireTool(tc.function.name);await delay(300);
+      const result=execTool(tc.function.name,args);doneTool(tc.function.name);
+      const isLive=liveTools.includes(tc.function.name)&&liveData.loaded;
+      addTrace(tc.function.name,isLive);log(`<span class="lok">${tc.function.name}${isLive?" live":""} done</span>`);
+      const p=JSON.parse(result);
+      if(tc.function.name==="get_user_profile"&&p.profile)updateUserCard(p.profile);
+      if(tc.function.name==="calculate_retirement_gaps")updateGapCard();
+      messages.push({role:"tool",tool_call_id:tc.id,content:result});
+    }
+  }
+}
+
+async function send(){
+  if(busy||!GROQ_KEY)return;
+  const inp=document.getElementById("inp");const txt=inp.value.trim();
+  if(!txt)return;inp.value="";busy=true;
+  addBubble("user",txt);messages.push({role:"user",content:txt});
+  log(`<span class="lwarn">User: ${txt.slice(0,40)}</span>`);
+  await agentLoop();busy=false;
+}
+
+function setMode(mode){
+  currentMode=mode;messages=[];intakeData={};
+  document.getElementById("btn-existing").className="mtbtn"+(mode==="existing"?" active":"");
+  document.getElementById("btn-new").className="mtbtn"+(mode==="new"?" active":"");
+  document.getElementById("chat").innerHTML="";
+  document.getElementById("log").innerHTML="Session reset<br>";
+  document.getElementById("user-info").innerHTML=`<div style="color:var(--muted);font-size:11px">Waiting...</div>`;
+  document.getElementById("sb-gaps").style.display="none";
+  document.getElementById("sb-intake").style.display="none";
+  document.getElementById("sb-user").style.display="block";
+  if(mode==="existing")autoStartExisting();else autoStartNew();
+}
+
+async function autoStartExisting(){
+  prog(15,"Loading portfolio...");
+  messages.push({role:"user",content:"Hi I am Ramesh Thomas user ID U-4421 please review my retirement plan."});
+  prog(40,"Calling MCP tools...");await agentLoop();prog(100,"Analysis complete");
+}
+
+async function autoStartNew(){
+  prog(10,"Starting new user intake...");
+  document.getElementById("sb-user").style.display="none";
+  document.getElementById("sb-intake").style.display="block";updIntake();
+  messages.push({role:"user",content:"Hi I am a new user and I want to plan for my retirement."});
+  await agentLoop();prog(20,"Collecting profile...");
+}
+
+async function setKey(){
+  const k=document.getElementById("key-input").value.trim();
+  if(!k.startsWith("gsk_")){alert("Key must start with gsk_");return;}
+  GROQ_KEY=k;document.getElementById("key-bar").className="key-bar hidden";
+  log(`<span class="lm">Groq connected</span>`);
+  prog(5,"Fetching live market data...");
+  await fetchLiveData();
+  if(currentMode==="existing")autoStartExisting();else autoStartNew();
+}
+
+window.onload=()=>{log(`<span class="lm">FinAdvisor ready</span>`);log(`<span class="lm">Model: ${MODEL}</span>`);};
+</script>
+</body>
+</html>
