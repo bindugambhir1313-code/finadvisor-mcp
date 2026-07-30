@@ -12,7 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy index.html to Hugging Face
+      - name: Deploy to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -24,12 +24,11 @@ jobs:
           token = os.environ["HF_TOKEN"]
           api = HfApi(token=token)
 
-          # Upload index.html from current directory
           api.upload_file(
-              path_or_fileobj="./index.html",
+              path_or_fileobj="./index_2.html",
               path_in_repo="index.html",
               repo_id="BGambhir/FinAdvisorV2",
               repo_type="space"
           )
-          print("Successfully deployed index.html to HF Space!")
+          print("Deployed index_2.html as index.html to HF Space!")
           EOF
