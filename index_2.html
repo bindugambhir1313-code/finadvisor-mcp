@@ -331,7 +331,7 @@ async function callGroq(msgs,retries=3){
     const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${GROQ_KEY}`},body:JSON.stringify({model:MODEL,messages:[{role:"system",content:getSystem()},...msgs],tools:TOOLS,tool_choice:"auto",temperature:0.3,max_tokens:512})});
     if(res.ok)return res.json();
     const err=await res.json();const msg=err.error?.message||"";
-    if(msg.includes("Rate limit")||res.status===429){removeTyping();addBubble("bot",`<span class="warn">Rate limit - waiting 60s then retrying...</span>`);await delay(1000);addTyping();continue;}
+    if(msg.includes("Rate limit")||res.status===429){removeTyping();addBubble("bot",`<span class="warn">Rate limit - waiting 5s then retrying...</span>`);await delay(5000);addTyping();continue;}
     throw new Error(msg);
   }
 }
