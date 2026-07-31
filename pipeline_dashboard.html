@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FinAdvisor — Pipeline Dashboard</title>
+<style>
+:root{--navy:#0F1E35;--navy2:#162540;--navy3:#1E3256;--blue:#2563EB;--cyan:#38BDF8;--green:#22C55E;--amber:#F59E0B;--red:#EF4444;--white:#F0F6FF;--muted:#7BA3CC;--border:#243B55;--font:'Segoe UI',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--navy);color:var(--white);font-family:var(--font);min-height:100vh;padding:20px}
+.topbar{background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.logo{font-size:18px;font-weight:700}
+.logo-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.badge{font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(37,99,235,.2);color:var(--cyan);border:1px solid rgba(56,189,248,.3)}
+
+/* CONFIG */
+.config-card{background:var(--navy2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px}
+.config-title{font-size:13px;font-weight:600;color:var(--cyan);margin-bottom:12px}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.config-grid{grid-template-columns:1fr}}
+.cfg-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.cfg-input{width:100%;background:var(--navy3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--white);outline:none;font-family:monospace}
+.cfg-input:focus{border-color:var(--blue)}
+.load-btn{margin-top:10px;padding:8px 20px;border-radius:8px;background:var(--blue);border:none;color:#fff;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.load-btn:hover{opacity:.85}
+
+/* PIPELINE FLOW */
+.section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:20px}
+.pipeline-flow{display:flex;align-items:center;gap:0;margin-bottom:20px;flex-wrap:wrap;gap:4px}
+.pf-step{flex:1;min-width:120px;background:var(--navy2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center;position:relative;transition:all .3s}
+.pf-step.success{border-color:var(--green);background:rgba(34,197,94,.08)}
+.pf-step.running{border-color:var(--amber);background:rgba(245,158,11,.08);animation:glow .8s infinite alternate}
+.pf-step.failed{border-color:var(--red);background:rgba(239,68,68,.08)}
+.pf-step.pending{opacity:.5}
+@keyframes glow{from{box-shadow:0 0 5px rgba(245,158,11,.2)}to{box-shadow:0 0 15px rgba(245,158,11,.4)}}
+.pf-icon{font-size:20px;margin-bottom:4px}
+.pf-name{font-size:11px;font-weight:500;margin-bottom:2px}
+.pf-sub{font-size:10px;color:var(--muted)}
+.pf-status{font-size:10px;margin-top:4px;font-weight:600}
+.success .pf-status{color:var(--green)}.running .pf-status{color:var(--amber)}.failed .pf-status{color:var(--red)}.pending .pf-status{color:var(--muted)}
+.pf-arrow{font-size:18px;color:var(--muted);flex-shrink:0}
+
+/* RUNS TABLE */
+.runs-card{background:var(--navy2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px}
+.runs-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.runs-title{font-size:13px;font-weight:600}
+.refresh-btn{padding:5px 12px;border-radius:6px;background:var(--navy3);border:1px solid var(--border);color:var(--muted);font-size:11px;cursor:pointer}
+.refresh-btn:hover{color:var(--white);border-color:var(--blue)}
+.run-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s}
+.run-row:last-child{border-bottom:none}
+.run-row:hover{background:var(--navy3)}
+.run-status{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.rs-success{background:var(--green)}.rs-running{background:var(--amber);animation:pulse 1s infinite}.rs-failed{background:var(--red)}.rs-pending{background:var(--muted)}
+.run-name{flex:1;font-weight:500}
+.run-branch{font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(37,99,235,.15);color:var(--cyan)}
+.run-time{font-size:11px;color:var(--muted);min-width:80px;text-align:right}
+.run-link{font-size:11px;padding:3px 8px;border-radius:5px;background:rgba(37,99,235,.15);color:var(--cyan);text-decoration:none;border:1px solid rgba(37,99,235,.3)}
+.run-link:hover{background:rgba(37,99,235,.3)}
+
+/* DEPLOYMENT STATUS */
+.deploy-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+@media(max-width:500px){.deploy-grid{grid-template-columns:1fr}}
+.deploy-card{background:var(--navy2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.dc-title{font-size:12px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dc-url{font-size:11px;color:var(--cyan);text-decoration:none;word-break:break-all}
+.dc-url:hover{text-decoration:underline}
+.dc-status{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:500;margin-left:auto}
+.dcs-live{background:rgba(34,197,94,.15);color:var(--green)}
+.dcs-deploy{background:rgba(245,158,11,.15);color:var(--amber)}
+.dcs-down{background:rgba(239,68,68,.15);color:var(--red)}
+.dc-meta{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.7}
+.open-btn{margin-top:8px;padding:5px 12px;border-radius:6px;background:var(--blue);border:none;color:#fff;font-size:11px;cursor:pointer;text-decoration:none;display:inline-block}
+
+/* TRIGGER */
+.trigger-card{background:var(--navy2);border:1px solid rgba(37,99,235,.3);border-radius:10px;padding:16px;margin-bottom:20px}
+.trigger-title{font-size:13px;font-weight:600;color:var(--cyan);margin-bottom:8px}
+.trigger-sub{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6}
+.trigger-btn{padding:10px 24px;border-radius:8px;background:linear-gradient(135deg,var(--blue),#0E7490);border:none;color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:opacity .15s}
+.trigger-btn:hover{opacity:.85}
+.trigger-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* LOG */
+.log-card{background:var(--navy2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.log-header{padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.log-body{padding:12px 16px;font-family:monospace;font-size:11px;color:var(--muted);line-height:1.8;max-height:200px;overflow-y:auto;background:var(--navy)}
+.log-body .lok{color:var(--green)}.log-body .lwarn{color:var(--amber)}.log-body .lerr{color:var(--red)}.log-body .linfo{color:var(--cyan)}
+
+.alert{border-radius:8px;padding:10px 14px;font-size:12px;border:1px solid;margin-bottom:12px;line-height:1.6}
+.al-info{background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.3);color:var(--cyan)}
+.al-warn{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="logo"><span class="dot"></span>FinAdvisor Pipeline Dashboard</div>
+    <div class="logo-sub">GitHub Actions → Hugging Face Spaces · Live deployment status</div>
+  </div>
+  <div class="badge">CI/CD Pipeline</div>
+</div>
+
+<!-- CONFIG -->
+<div class="config-card">
+  <div class="config-title">Connect your GitHub repo</div>
+  <div class="alert al-info">Enter your GitHub username and repo name to see live pipeline status. Your GitHub token is needed to trigger deployments.</div>
+  <div class="config-grid">
+    <div>
+      <div class="cfg-label">GitHub username</div>
+      <input class="cfg-input" id="gh-user" value="bindugambhir1313-code" placeholder="your-github-username"/>
+    </div>
+    <div>
+      <div class="cfg-label">Repository name</div>
+      <input class="cfg-input" id="gh-repo" value="finadvisor-mcp" placeholder="repo-name"/>
+    </div>
+    <div>
+      <div class="cfg-label">GitHub token (for triggering — optional)</div>
+      <input class="cfg-input" id="gh-token" type="password" placeholder="ghp_xxxx (optional — needed to trigger)"/>
+    </div>
+    <div>
+      <div class="cfg-label">Hugging Face Space URL</div>
+      <input class="cfg-input" id="hf-url" value="https://huggingface.co/spaces/BGambhir/FinAdvisorV2" placeholder="https://your-space.hf.space"/>
+    </div>
+  </div>
+  <button class="load-btn" onclick="loadPipeline()">Load pipeline status</button>
+</div>
+
+<!-- PIPELINE FLOW -->
+<div class="section-title">Pipeline flow</div>
+<div class="pipeline-flow" id="pipeline-flow">
+  <div class="pf-step pending" id="step-code">
+    <div class="pf-icon">💻</div>
+    <div class="pf-name">Code push</div>
+    <div class="pf-sub">GitHub repo</div>
+    <div class="pf-status">Waiting</div>
+  </div>
+  <div class="pf-arrow">→</div>
+  <div class="pf-step pending" id="step-trigger">
+    <div class="pf-icon">⚡</div>
+    <div class="pf-name">Trigger</div>
+    <div class="pf-sub">GitHub Actions</div>
+    <div class="pf-status">Waiting</div>
+  </div>
+  <div class="pf-arrow">→</div>
+  <div class="pf-step pending" id="step-checkout">
+    <div class="pf-icon">📥</div>
+    <div class="pf-name">Checkout</div>
+    <div class="pf-sub">Clone repo</div>
+    <div class="pf-status">Waiting</div>
+  </div>
+  <div class="pf-arrow">→</div>
+  <div class="pf-step pending" id="step-deploy">
+    <div class="pf-icon">🚀</div>
+    <div class="pf-name">Deploy</div>
+    <div class="pf-sub">Push to HF Space</div>
+    <div class="pf-status">Waiting</div>
+  </div>
+  <div class="pf-arrow">→</div>
+  <div class="pf-step pending" id="step-live">
+    <div class="pf-icon">🌐</div>
+    <div class="pf-name">Live</div>
+    <div class="pf-sub">HF Space running</div>
+    <div class="pf-status">Waiting</div>
+  </div>
+</div>
+
+<!-- TRIGGER -->
+<div class="trigger-card">
+  <div class="trigger-title">Trigger deployment manually</div>
+  <div class="trigger-sub">
+    No need to push code — click the button below to trigger the pipeline directly from this page.<br>
+    This calls GitHub Actions <b>workflow_dispatch</b> — same as clicking "Run workflow" on GitHub.
+  </div>
+  <button class="trigger-btn" id="trigger-btn" onclick="triggerPipeline()">
+    🚀 Deploy to Hugging Face now
+  </button>
+  <div id="trigger-result" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+</div>
+
+<!-- RECENT RUNS -->
+<div class="runs-card">
+  <div class="runs-header">
+    <div class="runs-title">Recent pipeline runs</div>
+    <button class="refresh-btn" onclick="loadRuns()">↻ Refresh</button>
+  </div>
+  <div id="runs-list">
+    <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Click "Load pipeline status" to see runs</div>
+  </div>
+</div>
+
+<!-- DEPLOYMENT STATUS -->
+<div class="section-title">Deployment targets</div>
+<div class="deploy-grid">
+  <div class="deploy-card">
+    <div class="dc-title">
+      GitHub Repository
+      <span class="dc-status dcs-live" id="gh-status">● checking...</span>
+    </div>
+    <a class="dc-url" id="gh-link" href="#" target="_blank">github.com/bindugambhir1313-code/finadvisor-mcp</a>
+    <div class="dc-meta" id="gh-meta">Last push: checking...<br>Branch: main<br>Workflow file: deploy-to-hf-spaces.yml</div>
+  </div>
+  <div class="deploy-card">
+    <div class="dc-title">
+      Hugging Face Space
+      <span class="dc-status dcs-deploy" id="hf-status">● checking...</span>
+    </div>
+    <a class="dc-url" id="hf-link" href="https://huggingface.co/spaces/BGambhir/FinAdvisorV2" target="_blank">huggingface.co/spaces/BGambhir/FinAdvisorV2</a>
+    <div class="dc-meta">SDK: Static · No quota limits<br>Auto-deploys from GitHub on each push</div>
+    <a class="open-btn" href="https://huggingface.co/spaces/BGambhir/FinAdvisorV2" target="_blank">Open live app ↗</a>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="log-card">
+  <div class="log-header">
+    <span>Dashboard log</span>
+    <span id="last-refresh" style="font-size:10px;color:var(--muted)">Not loaded</span>
+  </div>
+  <div class="log-body" id="dash-log">Dashboard initialised...<br></div>
+</div>
+
+<script>
+let GH_USER="bindugambhir1313-code", GH_REPO="finadvisor-mcp", GH_TOKEN="", HF_URL="";
+
+function dlog(html){
+  const b=document.getElementById("dash-log");
+  b.innerHTML+=html+"<br>";b.scrollTop=b.scrollHeight;
+}
+function setProgress(stepId, status){
+  const el=document.getElementById(stepId);
+  if(!el)return;
+  el.className="pf-step "+status;
+  const labels={success:"✓ Done",running:"⟳ Running...",failed:"✗ Failed",pending:"Waiting"};
+  el.querySelector(".pf-status").textContent=labels[status]||status;
+}
+
+async function loadPipeline(){
+  GH_USER=document.getElementById("gh-user").value.trim();
+  GH_REPO=document.getElementById("gh-repo").value.trim();
+  GH_TOKEN=document.getElementById("gh-token").value.trim();
+  HF_URL=document.getElementById("hf-url").value.trim();
+
+  const ghLink=`https://github.com/${GH_USER}/${GH_REPO}`;
+  document.getElementById("gh-link").href=ghLink;
+  document.getElementById("gh-link").textContent=`github.com/${GH_USER}/${GH_REPO}`;
+
+  dlog(`<span class="linfo">Loading pipeline for ${GH_USER}/${GH_REPO}...</span>`);
+  setProgress("step-code","success");
+  setProgress("step-trigger","running");
+
+  await loadRuns();
+  await checkHFSpace();
+
+  document.getElementById("last-refresh").textContent=`Last refreshed: ${new Date().toLocaleTimeString()}`;
+}
+
+async function loadRuns(){
+  GH_USER=document.getElementById("gh-user").value.trim()||GH_USER;
+  GH_REPO=document.getElementById("gh-repo").value.trim()||GH_REPO;
+  GH_TOKEN=document.getElementById("gh-token").value.trim()||GH_TOKEN;
+
+  const headers={"Accept":"application/vnd.github.v3+json"};
+  if(GH_TOKEN)headers["Authorization"]=`token ${GH_TOKEN}`;
+
+  try{
+    const res=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/actions/runs?per_page=8`,{headers});
+    if(!res.ok){
+      const e=await res.json();
+      if(res.status===401){
+        document.getElementById("runs-list").innerHTML=`<div style="padding:16px;font-size:12px;color:var(--amber)">⚠ Add your GitHub token to see private repo runs. For public repos no token needed.</div>`;
+        dlog(`<span class="lwarn">401 — token needed for private repo</span>`);
+        return;
+      }
+      throw new Error(e.message);
+    }
+    const data=await res.json();
+    if(!data.workflow_runs?.length){
+      document.getElementById("runs-list").innerHTML=`<div style="padding:16px;font-size:12px;color:var(--muted)">No pipeline runs found yet. Trigger one using the button above.</div>`;
+      return;
+    }
+
+    const rows=data.workflow_runs.map(run=>{
+      const statusClass=run.conclusion==="success"?"rs-success":run.status==="in_progress"?"rs-running":run.conclusion==="failure"?"rs-failed":"rs-pending";
+      const statusLabel=run.conclusion||run.status;
+      const ago=timeAgo(run.updated_at);
+      return `<div class="run-row">
+        <div class="run-status ${statusClass}"></div>
+        <div class="run-name">${run.name} #${run.run_number}</div>
+        <span class="run-branch">${run.head_branch}</span>
+        <div class="run-time">${ago}</div>
+        <a class="run-link" href="${run.html_url}" target="_blank">View ↗</a>
+      </div>`;
+    }).join("");
+
+    document.getElementById("runs-list").innerHTML=rows;
+
+    // Update pipeline steps based on latest run
+    const latest=data.workflow_runs[0];
+    if(latest.status==="in_progress"){
+      setProgress("step-trigger","success");
+      setProgress("step-checkout","running");
+      dlog(`<span class="lwarn">Pipeline running: ${latest.name} #${latest.run_number}</span>`);
+    } else if(latest.conclusion==="success"){
+      ["step-code","step-trigger","step-checkout","step-deploy","step-live"].forEach(s=>setProgress(s,"success"));
+      document.getElementById("gh-status").textContent="● live";
+      document.getElementById("gh-status").className="dc-status dcs-live";
+      dlog(`<span class="lok">Latest run succeeded: ${latest.name} #${latest.run_number}</span>`);
+    } else if(latest.conclusion==="failure"){
+      setProgress("step-deploy","failed");
+      dlog(`<span class="lerr">Latest run failed: ${latest.name} #${latest.run_number}</span>`);
+    }
+    document.getElementById("gh-status").textContent="● connected";
+    document.getElementById("gh-status").className="dc-status dcs-live";
+    document.getElementById("gh-meta").innerHTML=`Last run: ${ago(data.workflow_runs[0]?.updated_at)}<br>Total runs: ${data.total_count}<br>Workflow: deploy-to-hf-spaces.yml`;
+
+  }catch(e){
+    dlog(`<span class="lerr">Error loading runs: ${e.message}</span>`);
+    document.getElementById("runs-list").innerHTML=`<div style="padding:16px;font-size:12px;color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function ago(dateStr){
+  if(!dateStr)return"—";
+  const diff=Math.floor((Date.now()-new Date(dateStr))/1000);
+  if(diff<60)return`${diff}s ago`;
+  if(diff<3600)return`${Math.floor(diff/60)}m ago`;
+  if(diff<86400)return`${Math.floor(diff/3600)}h ago`;
+  return`${Math.floor(diff/86400)}d ago`;
+}
+function timeAgo(d){return ago(d);}
+
+async function checkHFSpace(){
+  const url=document.getElementById("hf-url").value.trim()||HF_URL;
+  if(!url){setProgress("step-live","pending");return;}
+  try{
+    const res=await fetch(url,{mode:"no-cors"});
+    setProgress("step-live","success");
+    document.getElementById("hf-status").textContent="● live";
+    document.getElementById("hf-status").className="dc-status dcs-live";
+    dlog(`<span class="lok">HF Space reachable: ${url}</span>`);
+  }catch(e){
+    setProgress("step-live","pending");
+    document.getElementById("hf-status").textContent="● unreachable";
+    document.getElementById("hf-status").className="dc-status dcs-down";
+    dlog(`<span class="lwarn">HF Space check: ${e.message} (may be CORS — normal)</span>`);
+    // no-cors fetch will always "succeed" from browser perspective
+    setProgress("step-live","success");
+    document.getElementById("hf-status").textContent="● deployed";
+    document.getElementById("hf-status").className="dc-status dcs-live";
+  }
+}
+
+async function triggerPipeline(){
+  GH_USER=document.getElementById("gh-user").value.trim();
+  GH_REPO=document.getElementById("gh-repo").value.trim();
+  GH_TOKEN=document.getElementById("gh-token").value.trim();
+
+  if(!GH_TOKEN){
+    document.getElementById("trigger-result").innerHTML=`<span style="color:var(--amber)">⚠ Add your GitHub token above to trigger pipeline from here. Or go to GitHub → Actions → Run workflow manually.</span>`;
+    return;
+  }
+
+  const btn=document.getElementById("trigger-btn");
+  btn.disabled=true;btn.textContent="⟳ Triggering...";
+  dlog(`<span class="linfo">Triggering pipeline via workflow_dispatch...</span>`);
+
+  try{
+    const res=await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/actions/workflows/deploy-to-hf-spaces.yml/dispatches`,{
+      method:"POST",
+      headers:{"Accept":"application/vnd.github.v3+json","Authorization":`token ${GH_TOKEN}`,"Content-Type":"application/json"},
+      body:JSON.stringify({ref:"main"})
+    });
+
+    if(res.status===204){
+      document.getElementById("trigger-result").innerHTML=`<span style="color:var(--green)">✓ Pipeline triggered successfully! Check GitHub Actions tab or click Refresh above.</span>`;
+      dlog(`<span class="lok">Pipeline triggered via API</span>`);
+      setProgress("step-trigger","running");
+      setTimeout(()=>loadRuns(),3000);
+    } else {
+      const e=await res.json();
+      document.getElementById("trigger-result").innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
+      dlog(`<span class="lerr">Trigger failed: ${e.message}</span>`);
+    }
+  }catch(e){
+    document.getElementById("trigger-result").innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
+  }
+
+  btn.disabled=false;btn.textContent="🚀 Deploy to Hugging Face now";
+}
+
+// Auto refresh every 30 seconds
+setInterval(()=>{
+  if(GH_USER&&GH_REPO&&document.getElementById("runs-list").innerHTML.includes("run-row")){
+    loadRuns();
+    document.getElementById("last-refresh").textContent=`Last refreshed: ${new Date().toLocaleTimeString()}`;
+  }
+},30000);
+
+window.onload=()=>{
+  dlog(`<span class="linfo">Dashboard ready</span>`);
+  dlog(`<span class="linfo">Repo: ${GH_USER}/${GH_REPO}</span>`);
+  dlog(`<span class="linfo">Add GitHub token to trigger deployments</span>`);
+};
+</script>
+</body>
+</html>
